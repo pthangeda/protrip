@@ -1,0 +1,2 @@
+agency_id,agency_name,agency_url,agency_timezone,agency_lang,agency_phone
+CUMTD,Champaign Urbana Mass Transit District,https://www.cumtd.com,America/Chicago,en,217-384-8188
