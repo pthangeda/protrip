@@ -15,14 +15,14 @@ A docker container will be available at a further point in the development of th
 PROTRIP relies on GTFS feeds and accurate travel time data between stops to build the probablistic model of travel times in any transit network. In this implementation, we use the Champaign-Urbana Mass Transit District (CUMTD) GTFS feed [available here](https://developer.cumtd.com/). You can find GTFS static feeds of many major transit providers around the world at [this website](https://transitfeeds.com/). We use the historical schedule adherence records generated from the CAD/AVL system of CUMTD to extract the travel time data points at different road segments in the graph. The following image shows a preview of the stops and travel time data extracted from the GTFS feed and schedule adherence data extracted from CUMTD AVL.
 
 <p align="center">
-  <img src="https://github.com/pthangeda/protrip/blob/master/files/map_extractedata.PNG" width="256" title="Visualization of Extracted Data">
+  <img src="https://github.com/pthangeda/protrip/blob/master/files/map_extractedata.PNG" width="512" title="Visualization of Extracted Data">
 </p>
 
 ## Example
 After setting up the environment, a minimal working example of the code can be found in the `run_simulation.py` file. The user is expected to set the `origin, destination, t_budget, alpha, start_time` variables which represent the origin node, the destination node, the time budget of the user, the delay tolerance of the user, and the time the user arrives at the origin stop. The output would be a policy expressed as the route to be taken at the origin and each of the intermediate transfer stops. A visualization of the routes and the area considered in this example is given below
 
 <p align="center">
-  <img src="https://github.com/pthangeda/protrip/tree/master/files/map_casestudy.png" width="256" title="Map of Case Study">
+  <img src="https://github.com/pthangeda/protrip/blob/master/files/map_casestudy.png" width="512" title="Map of Case Study">
 </p>
 
 ## Acknowledgment
