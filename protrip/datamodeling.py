@@ -1,188 +1,130 @@
 # -*- coding: utf-8 -*-
 """
-Description:
-
 Author: Pranay Thangeda
-License: MIT License
 Email: contact@prny.me
-Description: Use the data in Graph G for particular predetermined routes and
-find the distribution of the data. Use 13S and Green as two competing paths.
-Generate plots of distributions for graph.
+Description: Tools for developing and updating the probabilistic travel time
+model of a given transit network
 """
 
-import warnings
 import numpy as np
-import pandas as pd
-import scipy.stats as st
-import matplotlib
-import matplotlib.pyplot as plt
-import dataprocessing as dp
-import numpy as np
-import seaborn as sns
+
+class Model:
+
+    def __init__(self, G, routes_dict):
+        self.mean = self._calcmean(G, routes_dict)
+        self.cov = self._calccov(G, routes_dict)
+        self.numsamples = self._calcnumsamples(G, routes_dict)
+
+    def _calcmean(self, G, routes_dict):
+        """
+        Evaluate mean time on edges in the road network using travel time
+        samples.
+        """
+        mean = dict()
+        for route_name, route_nodes in routes_dict.items():
+            for pair in zip(route_nodes[:-1], route_nodes[1:]):
+
+                if G.has_edge(pair[0], pair[1]):
+                    time_data = list(G[pair[0]][pair[1]]['time_data'].values())
+
+                    if len(time_data) == 0:
+                        raise Exception('No data samples on the given edge')
+                    else:
+                        mean[pair] = np.mean(time_data)
+                else:
+                    raise Exception('Non existent edge in the route.')
+        return mean
 
 
+    def _calcnumsamples(self, G, routes_dict):
+        """
+        Calculate the number of samples on each valid route in the graph.
+        """
+        numsamples = dict()
+        for route_name, route_nodes in routes_dict.items():
+            num_samples = np.Inf
+            for pair in zip(route_nodes[:-1], route_nodes[1:]):
+                if G.has_edge(pair[0], pair[1]):
+                    time_data = list(G[pair[0]][pair[1]]['time_data'].values())
+                    n = len(time_data)
+                    if n == 0:
+                        raise Exception('No data samples on the given edge')
+                    elif n < num_samples:
+                        num_samples = n
+                else:
+                    raise Exception('Non existent edge in the route.')
 
-# Function to fit normal distribution to time data between two nodes
-def fit_dist(G, node1, node2):
+            if num_samples == 0:
+                raise Exception('An edge on the route has no samples')
+            elif num_samples == np.Inf:
+                raise Exception('No edge has valid number of samples')
+            else:
+                numsamples[route_name] = num_samples
+        return numsamples
 
-    # fitting normal distribution between nodes
-    time_data = list(G[node1][node2]['time_data'].values())
+    def _calccov(self, G, routes_dict):
+        """
+        Calculate the covariance between different edges of a given route.
+        """
+        cov = dict()
+        for route_name1, route_nodes1 in routes_dict.items():
+            for pair1 in zip(route_nodes1[:-1], route_nodes1[1:]):
+                for route_name2, route_nodes2 in routes_dict.items():
+                    for pair2 in zip(route_nodes2[:-1], route_nodes2[1:]):
 
-    if time_data == []:
-        raise Exception('no time data between the nodes')
+                        if G.has_edge(pair1[0], pair1[1]) and G.has_edge(pair2[0], pair2[1]):
+                            dict_edge1 = G[pair1[0]][pair1[1]]['time_data']
+                            dict_edge2 = G[pair2[0]][pair2[1]]['time_data']
+                            common_trips = dict_edge1.keys() & dict_edge2.keys()
 
-    params = st.norm.fit(time_data)
-    return params
-
-# Fit a multivariate normal distribution for travel time on all edges on the route
-def fit_mulitvariatenormal(G, route):
-    pass
-    # return the distribution as some parameter
-
-def find_conditional(node1, node2, data, dist):
-    pass
-    # Given data of travel time between different edges, find the conditional
-    # distribution of travel time on rest of the edges and then find the
-    # reliability and expected value
-
-
-# Function that calculates distibution of a path assuming independence of road edges.
-def calc_pathdist():
-    pass
-
-# Find covariance of travel time on edges (node1, node2) and (node3, node4)
-def calc_cov(G, node1, node2, node3, node4):
-
-    if G.has_edge(node1, node2) and G.has_edge(node3, node4):
-        dict_edge1 = G[node1][node2]['time_data']
-        dict_edge2 = G[node3][node4]['time_data']
-
-        # Extract data samples with same indices in both
-        common_trips = dict_edge1.keys() & dict_edge2.keys()
-
-        if len(common_trips) in [0, 1]:
-            raise Exception('Cannot find correlation. No or only one common data points between edges')
-
-        timedata_edge1 = [dict_edge1.get(key) for key in common_trips]
-        timedata_edge2 = [dict_edge2.get(key) for key in common_trips]
-
-        # Covariance
-        cov = np.cov(timedata_edge1,timedata_edge2)[0][1]
-        plt.figure(figsize=(6,4))
-        sns.jointplot(timedata_edge1, timedata_edge2)
-        plt.savefig('jointdist.png')
-
+                            if len(common_trips) in [0, 1]:
+                                cov[(pair1, pair2)] = 0
+                            else:
+                                timedata_edge1 = [dict_edge1.get(key) for key in common_trips]
+                                timedata_edge2 = [dict_edge2.get(key) for key in common_trips]
+                                cov[(pair1, pair2)] = np.cov(timedata_edge1,timedata_edge2)[0][1]
+                        else:
+                            raise Exception('Requested edges do not exist in the graph')
         return cov
 
-    else:
-        raise Exception('Cannot find covariance. One or both of the edges dont exist')
+    def calc_routemean(self, route):
+        """
+        Calculate the expected value of travel time on a given route object
+        """
+        nodelist = route.nodes
+        meanlist = []
+        for pair in zip(nodelist[:-1], nodelist[1:]):
+            mean = self.mean[pair]
+            meanlist.append[mean]
+        return meanlist
+
+    def calc_pathmean(self, path):
+        """
+        Calculate the expected travel time of a given path expressed as a series
+        of nodes that denotes the path in the transit graph
+        """
+        nodelist = path
+        meanlist = []
+        for pair in zip(nodelist[:-1], nodelist[1:]):
+            mean = self.mean[pair]
+            meanlist.append[mean]
+        return meanlist
+
+    def updatemodel(self, trip):
+        """
+        Update the travel time model based on the latest recorded sample
+        """
+        pass
+
+        time_sample = trip.history
+        num_samples = trip.route.numsamples
 
 
-# Function that calculates expected travel time between two nodes using data samples
-def calc_et(G, node1, node2):
-
-    if G.has_edge(node1, node2):
-        time_data = list(G[node1][node2]['time_data'].values())
-        expected_time = np.mean(time_data)
-        return expected_time
-    else:
-        raise Exception('No edge exists between the two nodes')
 
 # ==============================================
 if __name__ == "__main__":
-
-    # Specifying routes - green and silver
-
-    green_dt2iu = ['Lincoln Square Garage South,8', 'Green & Race (NW Corner),4',
-         'Green & Cedar (NE Corner),1', 'Green & Birch (NE Corner),1',
-         'Green & Orchard (NE Corner),1', 'Green & Busey (NE Corner),1',
-         'Green & Gregory (NW Far Side),1', 'Green & Goodwin (NW Far Side),8',
-         'Illini Union (North Side Shelter),2']
-
-
-    silver_dt2iu = ['Lincoln Square Garage South,8','Springfield & Birch (NE Corner),1',
-          'Springfield at Phillips Rec. Ctr (North),2', 'Springfield & Busey (NE Corner),1',
-          'Springfield & Gregory St. (NE Corner),1', 'Springfield & Harvey (NE Corner),1',
-          'Goodwin at Ceramics Building,1', 'Green & Goodwin (NW Far Side),8',
-          'Illini Union (Island Shelter),9']
-
-    green_dt2dt = ['Lincoln Square Garage South,8', 'Green & Race (NW Corner),4',
-                   'Green & Cedar (NE Corner),1', 'Green & Birch (NE Corner),1',
-                   'Green & Orchard (NE Corner),1', 'Green & Busey (NE Corner),1',
-                   'Green & Gregory (NW Far Side),1', 'Green & Goodwin (NW Far Side),8',
-                   'Illini Union (North Side Shelter),2', 'Green & Sixth (NE Corner),1',
-                   'Green & Fourth (NE Corner),1', 'Green & Second (NE Corner),1',
-                   'Green & Locust (NE Corner),1', 'Green & Neil (NE Far Side),5', 'Neil & Springfield (SE Corner),2',
-                   'Neil & Marshall (SE Corner),2', 'Walnut & Logan (SE Corner),2', 'Walnut & University (SE Corner),2', 'Illinois Terminal (Platform A)']
-
-
-    orange_dt2dt = ['Lincoln Square Courthouse,2', 'Save A Lot (East Side),2', 'Broadway & University (SE Corner),2',
-                     'Broadway & Park (NW Far Side),8', 'Park & Central (NE Corner),1', 'Church & Orchard (NE Corner),1',
-                     'Coler & Church (NE Corner),1', 'Church & Busey (NE Corner),1', 'Lincoln & Park (West Side),4',
-                     'Campus Circle (North Side),2', 'University & Goodwin (NE Corner),1', 'Goodwin & Park (NW Far Side),8',
-                     'Park & Romine (North Side),1', 'Park & Wright (NE Corner),1', 'University & Sixth (NW Far Side),8',
-                     'University & Fourth (NE Corner),1', 'University & Second (NE Corner),1', 'Illinois Terminal (Platform A),1']
-
-    yellow_iu2dt = ['Wright & Healey (East Side),2', 'White & Wright (SE Corner),2',
-                    'White Street Mid-Block (North Side),2', 'White & Second (NE Corner),1', 'White & First (NE Corner),1',
-                    'Illinois Terminal (Platform C),5']
-
-    gy_dt2dt = green_dt2iu + yellow_iu2dt
-
-    ROOT_PATH = 'D:\\Repos\\riskaware-planning'
-#    G, list_trips = dp.extract_data(ROOT_PATH)
-    node1, node2 =  'Springfield at Phillips Rec. Ctr (North),2', 'Springfield & Busey (NE Corner),1'
-    node3, node4 =   'Springfield & Busey (NE Corner),1', 'Springfield & Gregory St. (NE Corner),1'
-#    data = list(G[node1][node2]['time_data'].values())
-#    plt.figure(figsize=(6,4))
-#    sns.distplot(data, kde=False, fit=st.lognorm, color='b')
-#    plt.xlabel('travel time (sec)')
-#    plt.ylabel('probability')
-#    plt.savefig('lognormal.png')
-#    params = st.lognorm.fit(data)
-
-    cov = calc_cov(G, node1, node2, node3, node4)
-
-    # Find the expected travel time and reliability for given budget
-    def find_reli(G, route, time_budget):
-
-        mean = []
-        sd = []
-        temp = list(zip(route[:-1], route[1:]))
-        for pair in zip(temp[:-1],temp[1:]):
-            ((node1, node2), (node3, node4)) = pair
-            dist_param = fit_dist(G, node1, node2)
-            (mean_temp, sd_temp) = dist_param
-            mean.append(mean_temp)
-            sd.append(sd_temp)
-
-        mean_path = sum(mean)
-        sd_path = np.sqrt(sum(np.square(np.asarray(sd))))
-        dist = st.norm(loc=mean_path, scale=sd_path)
-        reli = dist.cdf(time_budget)
-        return  reli, mean_path
-
-
-    # Calculating for different routes
-    reli_orange, mean_orange = find_reli(G, orange_dt2dt, 500)
-    reli_green, mean_green = find_reli(G, green_dt2dt, 500)
-
-
-    # Calculating for green plus orange
-    reli_hybrid, mean_hybrid = find_reli(G, gy_dt2dt, 500)
-
-
-# Dependent structure
-
-# Building Model
-    # Calculate covariances
-    # Calculate means - Build multivariate normal
-    # Take a sample - consider bus times
-
-    # Run time simulations
-
-#
-#
+    pass
+    # Add test code
 
 
 

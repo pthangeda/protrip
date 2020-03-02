@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Description:
-
 Author: Pranay Thangeda
-License: MIT License
 Email: contact@prny.me
 Description: Functions for extracting and processing data from GTFS feed
 and historic travel time data from CUMTD
