@@ -18,13 +18,6 @@ PROTRIP relies on GTFS feeds and accurate travel time data between stops to buil
   <img src="https://github.com/pthangeda/protrip/blob/master/files/map_extractedata.PNG" width="400" title="Visualization of Extracted Data">
 </p>
 
-## Example
-After setting up the environment, a minimal working example of the code can be found in the `run_simulation.py` file. The user is expected to set the `origin, destination, t_budget, alpha, start_time` variables which represent the origin node, the destination node, the time budget of the user, the delay tolerance of the user, and the time the user arrives at the origin stop. The output would be a policy expressed as the route to be taken at the origin and each of the intermediate transfer stops. A visualization of the routes and the area considered in this example is given below
-
-<p align="center">
-  <img src="https://github.com/pthangeda/protrip/blob/master/files/map_casestudy.png" width="400" title="Map of Case Study">
-</p>
-
 ## Acknowledgment
 Thanks to CUMTD for providing the data and insights of their operations. 
 
