@@ -1,3 +1,7 @@
+## Update
+We started to work on PROTRIP 2.0, bringing our proof-of-concept implementation closer to a tool that can be used in multiple cities across the world. During this development period, things might not run as intended. If you are looking for the version of our code presented in ITSC2020, please email [Pranay Thangeda](mailto:pranayt2@illinois.edu).
+
+
 PROTRIP - Probabilistic Risk-Aware Optimal Transit Planner
 ==========================================================
 PROTRIP is a multiobjective optimal routing algorithm for transit networks. This repository hosts a proof-of-concept implementation of a multiobjective optimal routing planning algorithm and is under active development. Raise an issue if you notice any error or contact the authors [Pranay Thangeda](mailto:pranayt2@illinois.edu) and [Melkior Ornik](mailto:mornik@illinois.edu).
